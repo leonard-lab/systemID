@@ -1,0 +1,36 @@
+systemID7States.m Documentation:
+
+Here's how to use the fitting code.
+
+1) Get some data. I'm not sure that the data has to be uniformly sampled in
+time, but it is probably better if it is.
+
+2) Save the data as an iddata object. If the sampling rate is nonuniform, 
+see this entry from the iddata help page:
+Non-equal sampling:
+    The property 'SamplingInstants' gives the sampling instants of the
+    data points. It can always be retrieved by 
+    GET(DAT,'SamplingInstants') and is then computed from
+    DAT.Ts and DAT.Tstart. 'SamplingInstants' can also be set to an
+    arbitrary vector of the same length as the data, so that non-equal
+    sampling can be handled. Ts is then automatically set to [].
+    
+3) On line 58 of systemID7States, replace simdata.mat with the name of the 
+.mat file with your iddata object. By default, the code assumes that the
+initial state of the vehicle at the beginning of the experiment is all 
+zeros. This will almost certainly not be the case, so if you need to
+replace the default value with another guess, do it in this cell by 
+uncommenting the appropriate lines.
+
+4) Compare the behavior of the model with default parameter values to the 
+experimental data. On lines 78 and 80, replace simData with the name of 
+your iddata object. If the behavior is really different, you may have to
+modify the initial guess of the parameter values in the next step so that
+the optimization code converges.
+
+5) If necessary, modify the default initial guess of the parameter values 
+by modifying the vector parameterValues defined on line 99. You can then 
+re-run the previous cell to see the effects of the change.
+
+6) Run the optimization code to estimate the values of the parameters. This
+code takes a while to run but outputs some information about its progress.
