@@ -51,18 +51,18 @@ setpar(model, 'Unit', {'kg', 'kg', 'kg*m^2', '1', '1', 'm/s', 'kg/m', 'N/count',
                        'kg*m^2/s', 'kg/s', 'm', 'kg/s^2', 'm'});
 
 % set parameter constraints (mostly that values be positive; if necessary)
-setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0})
+% setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0})
 
 %% Load the data
 
-load simData.mat;     % replace this with the appropriate data file
+load realData.mat;     % replace this with the appropriate data file
 
 % OPTIONAL
 % set the initial state of the model equal to the empirically observed
 % initial state (if necessary)
-
-%initialState = [x0; y0; z0; u0; w0; thDot0; thDotDot0]; % replace with true values
-%setinit(model,'Value',mat2cell(initialState,ones(Order(3),1),1));
+% initialState = [x, y, z, u, w, theta, theta_dot]
+initialState = [-0.85495; -2.6563; 1.2589; 0; 0; 1.249; 0]; % replace with true values
+setinit(model,'Value',mat2cell(initialState,ones(Order(3),1),1));
 
 %% Before estimating the parameters, simulate the output of the system 
 %  with the parameter guesses using the default differential equation solver 
@@ -73,11 +73,6 @@ load simData.mat;     % replace this with the appropriate data file
 model.Algorithm.SimulationOptions.AbsTol = 1e-6;
 model.Algorithm.SimulationOptions.RelTol = 1e-5;
 
-%% Simulate the model with the experimental data (replace simData with your experimental data object)
-
-sim(model,simData);     % only simulates the system given the experimental inputs
-
-compare(simData,model); % compares the experimental data with the model given the default parameter values
 
 %% Set the initial guesses for parameters
 
@@ -102,7 +97,13 @@ disp(parameterValuesDefault)
 
 %% Estimate the value of parameters
 
-model = pem(simData, model, 'Display', 'Full');
+model = pem(ts_data, model, 'Display', 'Full');
 
 disp('Fitted parameter values:')
 getParameterVector(model)
+
+%% Simulate the model with the experimental data (replace simData with your experimental data object)
+
+sim_output = sim(model, ts_data);     % only simulates the system given the experimental inputs
+
+compare(ts_data, sim_output); % compares the experimental data with the model given the default parameter values
