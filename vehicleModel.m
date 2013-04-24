@@ -65,4 +65,4 @@ thetaDotDot = Gamma/J;
 dX = [xDot yDot zDot uDot wDot thetaDot thetaDotDot]';
 
 % Output the observation output: x, y, z, theta
-Y  = [X(1); X(2); X(3); X(6)];
+Y  = [X(1); X(2); X(3); wrapToPi(X(6))];
