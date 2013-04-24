@@ -14,7 +14,7 @@ etaDown     = 0.0004;
 wOffset     = 0.2;      % offset velocity (m/s)
 KdVert      = 70;       % quadratic drag coefficient (kg/m)
 
-Kt1         = 1.03;     % motor conversion (N/counts)
+Kt1         = 0.172;     % motor conversion (N/counts)
 KOmega      = 7;        % drag-induced torque (kg*m^2/s)
 Kd1         = 45;       % axial drag coefficient (kg/s)
 
