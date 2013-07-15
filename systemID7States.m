@@ -60,7 +60,7 @@ setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 
 %% Load the data
 
-load shemp2.mat;     % replace this with the appropriate data file
+%load realData.mat;     % replace this with the appropriate data file
 
 % OPTIONAL
 % set the initial state of the model equal to the empirically observed
@@ -114,4 +114,11 @@ v = getParameterVector(model)
 
 sim_output = sim(model,ts_data);     % only simulates the system given the experimental inputs
 
-compare(ts_data, sim_output); % compares the experimental data with the model given the default parameter values
+try
+    compare(ts_data, sim_output); % compares the experimental data with the model given the default parameter values
+catch err
+    Ts = mean(ts_data.SamplingInstants(2:end) - ts_data.SamplingInstants(1:end-1));
+    temp_data = iddata(ts_data.OutputData, ts_data.InputData, Ts);
+    sim_output = sim(model, temp_data);
+    compare(temp_data, sim_output);
+end
