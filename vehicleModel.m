@@ -1,5 +1,5 @@
-function [dX, Y] = vehicleModel(~, X, U, m1, m3, J, etaUp, etaDown, wOffset, ...
-                                KdVert, Kt1, KOmega, Kd1, r, KtetherVert, zOffset, varargin)
+function [dX, Y] = vehicleModel(~, X, U, m1, m3, J, eta3Up, eta3Down, eta1, ...
+                        Kd3, Kt, KOmega, Kd1, r, Kg, zOffset, Kdz, varargin)
 
 % Function [dX, Y] = vehicleModel(t, X, U, m1, m3, J, etaUp, etaDown, wOffset, ...
 %                                 KdVert, Kt1, KOmega, Kd1, r, KtetherVert, zOffset, varargin)
@@ -30,7 +30,8 @@ zDot = w;
 
 % Force model
 % Body-1 (axial) force
-F1 = Kt1*ut - Kd1*u;
+%F1 = Kt1*ut - Kd1*u;
+F1 = (1-eta1)*Kt*ut*cos(uphi)- Kd1*u*abs(u);
 
 % Body-2 (sideslip) force
 % F2 = 0; (by assumption)
@@ -39,21 +40,22 @@ F1 = Kt1*ut - Kd1*u;
 % logic to determine if actuator is pushing up or down (different
 % efficiency coefficients)
 if uz < 0       % want to descend
-    eta = -etaDown;
+    eta = eta3Down;
 elseif uz > 0   % want to ascend
-    eta = etaUp;
+    eta = eta3Up;
 else            % uz = 0
     eta = 0;
 end
 
-F3thrust = eta*(abs(uz)*(abs(uz)+11.25))/(abs(w) + wOffset);
-F3drag   = -KdVert*w*abs(w);
-F3tether = KtetherVert*(zOffset - z);
+% F3thrust = eta*(abs(uz)*(abs(uz)+11.25))/(abs(w) + wOffset);
+F3thrust = (1-eta)*uz*Kt;
+F3drag   = -Kd3*w*abs(w);
+F3tether = Kg*(zOffset - z);
 
 F3 = F3thrust + F3drag + F3tether;
 
 % Torque model
-Gamma = Kt1*ut*r*uphi - KOmega*thetaDot;
+Gamma = (1-eta1)*Kt*ut*r*sin(uphi) - KOmega*thetaDot*abs(thetaDot) - Kdz*uz;
 
 % Accelerations
 uDot = F1/m1;
@@ -65,4 +67,4 @@ thetaDotDot = Gamma/J;
 dX = [xDot yDot zDot uDot wDot thetaDot thetaDotDot]';
 
 % Output the observation output: x, y, z, theta
-Y  = [X(1); X(2); X(3); X(6)];
+Y  = [X(1); X(2); X(3); sin(X(6)); cos(X(6))];

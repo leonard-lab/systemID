@@ -4,31 +4,34 @@
 %% Construct model
 
 % free parameters to estimate: (inital guesses)
-m1          = 15;       % kg; comprises actual mass m and added mass m_i
-m3          = 19;       % kg
+m1          = 6; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
+m3          = 4; %36.1737;      %4 % kg
 
-J           = 2.5;      % kg*m^2
+J           = 2;    %2.5  % kg*m^2
 
-etaUp       = 0.0005;   % efficiency (dimensionless)
-etaDown     = 0.0004;
-wOffset     = 0.2;      % offset velocity (m/s)
-KdVert      = 70;       % quadratic drag coefficient (kg/m)
+eta3Up      = 0.1;  %0.0005 % efficiency (dimensionless)
+eta3Down    = 0.1; %0.0004
+eta1        = 0.1;    %0.2  % offset velocity (m/s)
+Kd3         = 70; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
 
-Kt1         = 1.03;     % motor conversion (N/counts)
-KOmega      = 7;        % drag-induced torque (kg*m^2/s)
-Kd1         = 45;       % axial drag coefficient (kg/s)
+Kt          = 0.2;   %1.03/6  % motor conversion (N/counts)
+KOmega      = 12;      %7  % drag-induced torque (kg*m^2/s)
+Kd1         = 50; % 285.0417;     %45  % axial drag coefficient (kg/s)
 
 % fixed parameters (assumed known)
 r           = 0.35;     % m; thruster moment arm
-KtetherVert = 1.1;      % tether weight/length (kg/s^2)
-zOffset     = 1;        % tether buoyancy offset (m)
+Kg          = 0.9088;      % tether weight/length (kg/s^2)
+zOffset     = 1.2640;        % tether buoyancy offset (m)
+
+Kdz         = .05;
 
 % model data
 FileName        = 'vehicleModel';   % Name of .m model ODE file
-Order           = [4 3 7];          % Model orders [ny nu nx]
-Parameters      = [m1; m3; J; etaUp; etaDown; wOffset; KdVert;  % Initial parameters
-                   Kt1; KOmega; Kd1;...         % unknown parameters
-                   r; KtetherVert; zOffset];    % known parameters
+Order           = [5 3 7];          % Model orders [ny nu nx]
+Parameters      = [m1; m3; J; eta3Up; eta3Down; eta1; Kd3; 
+                   Kt; KOmega; Kd1;...         
+                   r; Kg; zOffset; Kdz];    
+%Parameters = v;
 InitialStates   = zeros(Order(3),1);            % Initial initial state
 Ts              = 0;                            % continuous-time model
 
@@ -36,33 +39,36 @@ Ts              = 0;                            % continuous-time model
 model   = idnlgrey(FileName,Order,Parameters,InitialStates,Ts);
 
 % set which parameters are fixed (known)
+%model.Parameters(6).Fixed = true;
 model.Parameters(11).Fixed = true;
-model.Parameters(12).Fixed = true;
-model.Parameters(13).Fixed = true;
+%model.Parameters(12).Fixed = true;
+%model.Parameters(13).Fixed = true;
+
 
 % set parameter names, units, etc
 set(model, 'InputName', {'u_t','u_{\phi}','u_z'}, 'InputUnit', {'counts','radians','counts'});
-set(model, 'OutputName', {'x-position', 'y-position', 'z-position', '\theta'});
-set(model, 'OutputUnit', {'m', 'm', 'm', 'radians'});
+set(model, 'OutputName', {'x-position', 'y-position', 'z-position', 'sin(theta)', 'cos(theta)'});
+set(model, 'OutputUnit', {'m', 'm', 'm', 'units', 'units'});
 
-setpar(model, 'Name', {'m1', 'm3', 'J', 'etaUp', 'etaDown', 'wOffset', 'KdVert',...
-                       'Kt1', 'KOmega', 'Kd1', 'r', 'KtetherVert', 'zOffset'});
+setpar(model, 'Name', {'m1', 'm3', 'J', 'eta3Up', 'eta3Down', 'eta1', 'Kd3',...
+                       'Kt', 'KOmega', 'Kd1', 'r', 'Kg', 'zOffset', 'Kdz'});
 setpar(model, 'Unit', {'kg', 'kg', 'kg*m^2', '1', '1', 'm/s', 'kg/m', 'N/count',...
-                       'kg*m^2/s', 'kg/s', 'm', 'kg/s^2', 'm'});
+                       'kg*m^2/s', 'kg/s', 'm', 'kg/s^2', 'm', 'N*m/count'});
 
 % set parameter constraints (mostly that values be positive; if necessary)
-setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0})
+setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 
 %% Load the data
 
-load simData.mat;     % replace this with the appropriate data file
+load shemp2.mat;     % replace this with the appropriate data file
 
 % OPTIONAL
 % set the initial state of the model equal to the empirically observed
 % initial state (if necessary)
-
-%initialState = [x0; y0; z0; u0; w0; thDot0; thDotDot0]; % replace with true values
-%setinit(model,'Value',mat2cell(initialState,ones(Order(3),1),1));
+y_init = ts_data.OutputData(1,:);
+initialState = [y_init(1); y_init(2); y_init(3); 0; 0; atan2(y_init(4), y_init(5)); 0]; % replace with true values
+%initialState = [y_init(1); y_init(2); y_init(3); 0; 0; 2.1421; 0];
+setinit(model,'Value',mat2cell(initialState,ones(Order(3),1),1));
 
 %% Before estimating the parameters, simulate the output of the system 
 %  with the parameter guesses using the default differential equation solver 
@@ -73,11 +79,6 @@ load simData.mat;     % replace this with the appropriate data file
 model.Algorithm.SimulationOptions.AbsTol = 1e-6;
 model.Algorithm.SimulationOptions.RelTol = 1e-5;
 
-%% Simulate the model with the experimental data (replace simData with your experimental data object)
-
-sim(model,simData);     % only simulates the system given the experimental inputs
-
-compare(simData,model); % compares the experimental data with the model given the default parameter values
 
 %% Set the initial guesses for parameters
 
@@ -102,7 +103,15 @@ disp(parameterValuesDefault)
 
 %% Estimate the value of parameters
 
-model = pem(simData, model, 'Display', 'Full');
+model.Algorithm.MaxIter = 25;
+
+model = pem(ts_data, model, 'Display', 'Full');
 
 disp('Fitted parameter values:')
-getParameterVector(model)
+v = getParameterVector(model)
+
+%% Simulate the model with the experimental data (replace simData with your experimental data object)
+
+sim_output = sim(model,ts_data);     % only simulates the system given the experimental inputs
+
+compare(ts_data, sim_output); % compares the experimental data with the model given the default parameter values
