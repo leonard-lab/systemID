@@ -45,7 +45,7 @@ classdef record_beluga < handle
         end
         
         function input_callback(obj, ~, e)
-            obj.input_history(end+1,:) = [e.data.vertical_motor e.data.thrust_motor, e.data.servo];
+            obj.input_history(end+1,:) = [e.data.thrust_motor, e.data.servo e.data.vertical_motor];
             ros_time = e.data.header.stamp.secs + 10^-9 * e.data.header.stamp.nsecs;
             
             if (isnan(obj.start_time))
