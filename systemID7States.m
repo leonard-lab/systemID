@@ -5,25 +5,25 @@
 
 % free parameters to estimate: (inital guesses)
 m1          = 6; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
-m3          = 4; %36.1737;      %4 % kg
+m3          = 14.4; %36.1737;      %4 % kg
 
-J           = 2;    %2.5  % kg*m^2
+J           = 1.4;    %2.5  % kg*m^2
 
-eta3Up      = 0.1;  %0.0005 % efficiency (dimensionless)
-eta3Down    = 0.1; %0.0004
-eta1        = 0.1;    %0.2  % offset velocity (m/s)
-Kd3         = 70; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
+eta3Up      = 0.7;  %0.0005 % efficiency (dimensionless)
+eta3Down    = 0.88; %0.0004
+eta1        = 0.9;    %0.2  % offset velocity (m/s)
+Kd3         = 60.1; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
 
-Kt          = 0.2;   %1.03/6  % motor conversion (N/counts)
-KOmega      = 12;      %7  % drag-induced torque (kg*m^2/s)
+Kt          = 0.08;   %1.03/6  % motor conversion (N/counts)
+KOmega      = 2.41;      %7  % drag-induced torque (kg*m^2/s)
 Kd1         = 50; % 285.0417;     %45  % axial drag coefficient (kg/s)
 
 % fixed parameters (assumed known)
 r           = 0.35;     % m; thruster moment arm
-Kg          = 0.9088;      % tether weight/length (kg/s^2)
-zOffset     = 1.2640;        % tether buoyancy offset (m)
+Kg          = 0.8272;      % tether weight/length (kg/s^2)
+zOffset     = 1.3668;        % tether buoyancy offset (m)
 
-Kdz         = .05;
+Kdz         = 0.005;
 
 % model data
 FileName        = 'vehicleModel';   % Name of .m model ODE file
@@ -47,7 +47,7 @@ model.Parameters(11).Fixed = true;
 
 % set parameter names, units, etc
 set(model, 'InputName', {'u_t','u_{\phi}','u_z'}, 'InputUnit', {'counts','radians','counts'});
-set(model, 'OutputName', {'x-position', 'y-position', 'z-position', 'sin(theta)', 'cos(theta)'});
+set(model, 'OutputName', {'x-position', 'y-position', 'z-position', 'sin(\theta)', 'cos(\theta)'});
 set(model, 'OutputUnit', {'m', 'm', 'm', 'units', 'units'});
 
 setpar(model, 'Name', {'m1', 'm3', 'J', 'eta3Up', 'eta3Down', 'eta1', 'Kd3',...
