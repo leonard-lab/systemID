@@ -58,6 +58,8 @@ classdef record_beluga < handle
         function close(obj)
             obj.ws.close();
             
+            pause(0.1)
+            
             if (abs(obj.input_time_history(1) - obj.output_time_history(1)) > 0.01)
                 obj.output_time_history = obj.output_time_history(2:end);
                 obj.output_history = obj.output_history(2:end, :);
