@@ -1,27 +1,53 @@
 % Script file to do system ID on the Beluga system, 7 state model using
 % real data. Requires data in an iddata object
+%% Load the data
+
+%load shemp_collection_2013_7_18.mat;     % replace this with the appropriate data file
+
+Ne = size(ts_data, 4);
+Nx = 7;
+
+% OPTIONAL
+% set the initial state of the model equal to the empirically observed
+% initial state (if necessary)
+InitialStates = zeros(Nx, Ne);
+for i=1:Nx
+    y_init = zeros(Ne,1);
+    if any(i == [1, 2, 3, 6])
+        for j=1:Ne
+            data = getexp(ts_data, j);
+            if i == 6
+                y_init(j) = atan2(data.OutputData(1,4), data.OutputData(1,5));
+            else
+                y_init(j) = data.OutputData(1,i);
+            end
+        end
+    end
+    InitialStates(i,:) = y_init;
+end
+
 
 %% Construct model
 
 % free parameters to estimate: (inital guesses)
-m1          = 6; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
-m3          = 14.4; %36.1737;      %4 % kg
+m1          = 17; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
+m3          = 15; %36.1737;      %4 % kg
 
 J           = 1.4;    %2.5  % kg*m^2
 
-eta3Up      = 0.7;  %0.0005 % efficiency (dimensionless)
-eta3Down    = 0.88; %0.0004
-eta1        = 0.9;    %0.2  % offset velocity (m/s)
-Kd3         = 60.1; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
+eta3Up      = 0.2;  %0.0005 % efficiency (dimensionless)
+eta3Down    = 0.3; %0.0004
+eta1        = 0.4;    %0.2  % offset velocity (m/s)
+Kd3         = 59.8; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
 
-Kt          = 0.08;   %1.03/6  % motor conversion (N/counts)
-KOmega      = 2.41;      %7  % drag-induced torque (kg*m^2/s)
-Kd1         = 50; % 285.0417;     %45  % axial drag coefficient (kg/s)
+Kt          = 0.63;   %1.03/6  % motor conversion (N/counts)
+KOmega      = 3.2;      %7  % drag-induced torque (kg*m^2/s)
+Kd1         = 40; % 285.0417;     %45  % axial drag coefficient (kg/s)
 
 % fixed parameters (assumed known)
 r           = 0.35;     % m; thruster moment arm
-Kg          = 0.8272;      % tether weight/length (kg/s^2)
-zOffset     = 1.3668;        % tether buoyancy offset (m)
+Kg          = 0.8;      % tether weight/length (kg/s^2)
+zOffset     = 1.785;        % tether buoyancy offset (m)
 
 Kdz         = 0.005;
 
@@ -32,17 +58,20 @@ Parameters      = [m1; m3; J; eta3Up; eta3Down; eta1; Kd3;
                    Kt; KOmega; Kd1;...         
                    r; Kg; zOffset; Kdz];    
 %Parameters = v;
-InitialStates   = zeros(Order(3),1);            % Initial initial state
+%InitialStates   = zeros(Order(3),1);            % Initial initial state
 Ts              = 0;                            % continuous-time model
 
 % construct model
 model   = idnlgrey(FileName,Order,Parameters,InitialStates,Ts);
 
 % set which parameters are fixed (known)
-%model.Parameters(6).Fixed = true;
+model.Parameters(2).Fixed = true;
 model.Parameters(11).Fixed = true;
-%model.Parameters(12).Fixed = true;
-%model.Parameters(13).Fixed = true;
+
+model.Parameters(7).Fixed = true;
+
+model.Parameters(12).Fixed = true;
+model.Parameters(13).Fixed = true;
 
 
 % set parameter names, units, etc
@@ -58,17 +87,7 @@ setpar(model, 'Unit', {'kg', 'kg', 'kg*m^2', '1', '1', 'm/s', 'kg/m', 'N/count',
 % set parameter constraints (mostly that values be positive; if necessary)
 setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0,0})
 
-%% Load the data
 
-%load realData.mat;     % replace this with the appropriate data file
-
-% OPTIONAL
-% set the initial state of the model equal to the empirically observed
-% initial state (if necessary)
-y_init = ts_data.OutputData(1,:);
-initialState = [y_init(1); y_init(2); y_init(3); 0; 0; atan2(y_init(4), y_init(5)); 0]; % replace with true values
-%initialState = [y_init(1); y_init(2); y_init(3); 0; 0; 2.1421; 0];
-setinit(model,'Value',mat2cell(initialState,ones(Order(3),1),1));
 
 %% Before estimating the parameters, simulate the output of the system 
 %  with the parameter guesses using the default differential equation solver 
@@ -117,8 +136,12 @@ sim_output = sim(model,ts_data);     % only simulates the system given the exper
 try
     compare(ts_data, sim_output); % compares the experimental data with the model given the default parameter values
 catch err
-    Ts = mean(ts_data.SamplingInstants(2:end) - ts_data.SamplingInstants(1:end-1));
-    temp_data = iddata(ts_data.OutputData, ts_data.InputData, Ts);
-    sim_output = sim(model, temp_data);
-    compare(temp_data, sim_output);
+    for i=1:Ne
+        times = ts_data.SamplingInstants{i};
+        Ts_mat(i) = mean(times(2:end) - times(1:end-1));
+    end
+    Ts = mean(Ts_mat);
+    ts_data_const = iddata(ts_data.OutputData, ts_data.InputData, Ts);
+    sim_output = sim(model, ts_data_const);
+    compare(ts_data_const, sim_output);
 end
