@@ -55,7 +55,7 @@ F3tether = Kg*(zOffset - z);
 F3 = F3thrust + F3drag + F3tether;
 
 % Torque model
-Gamma = (1-eta1)*Kt*ut*r*sin(uphi) - KOmega*thetaDot*abs(thetaDot) - Kdz*uz;
+Gamma = -1*(1-eta1)*Kt*ut*r*sin(uphi) - KOmega*thetaDot*abs(thetaDot) - Kdz*uz;
 
 % Accelerations
 uDot = F1/m1;
