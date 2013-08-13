@@ -1,5 +1,7 @@
 % Script file to do system ID on the Beluga system, 7 state model using
 % real data. Requires data in an iddata object
+
+fit = true;
 %% Load the data
 
 %load shemp_collection_2013_7_18.mat;     % replace this with the appropriate data file
@@ -30,24 +32,24 @@ end
 %% Construct model
 
 % free parameters to estimate: (inital guesses)
-m1          = 17; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
+m1          = 10; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
 m3          = 15; %36.1737;      %4 % kg
 
 J           = 1.4;    %2.5  % kg*m^2
 
 eta3Up      = 0.2;  %0.0005 % efficiency (dimensionless)
-eta3Down    = 0.3; %0.0004
-eta1        = 0.4;    %0.2  % offset velocity (m/s)
+eta3Down    = 0.4; %0.0004
+eta1        = 0.5;    %0.2  % offset velocity (m/s)
 Kd3         = 59.8; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
 
-Kt          = 0.63;   %1.03/6  % motor conversion (N/counts)
+Kt          = 0.2;   %1.03/6  % motor conversion (N/counts)
 KOmega      = 3.2;      %7  % drag-induced torque (kg*m^2/s)
-Kd1         = 40; % 285.0417;     %45  % axial drag coefficient (kg/s)
+Kd1         = 50; % 285.0417;     %45  % axial drag coefficient (kg/s)
 
 % fixed parameters (assumed known)
 r           = 0.35;     % m; thruster moment arm
 Kg          = 0.8;      % tether weight/length (kg/s^2)
-zOffset     = 1.785;        % tether buoyancy offset (m)
+zOffset     = 1.91;        % tether buoyancy offset (m)
 
 Kdz         = 0.005;
 
@@ -68,10 +70,10 @@ model   = idnlgrey(FileName,Order,Parameters,InitialStates,Ts);
 model.Parameters(2).Fixed = true;
 model.Parameters(11).Fixed = true;
 
-model.Parameters(7).Fixed = true;
+model.Parameters(8).Fixed = true;
 
-model.Parameters(12).Fixed = true;
-model.Parameters(13).Fixed = true;
+model.Parameters(7).Fixed = true;
+%model.Parameters(13).Fixed = true;
 
 
 % set parameter names, units, etc
@@ -86,12 +88,6 @@ setpar(model, 'Unit', {'kg', 'kg', 'kg*m^2', '1', '1', 'm/s', 'kg/m', 'N/count',
 
 % set parameter constraints (mostly that values be positive; if necessary)
 setpar(model, 'Minimum', {0,0,0,0,0,0,0,0,0,0,0,0,0,0})
-
-
-
-%% Before estimating the parameters, simulate the output of the system 
-%  with the parameter guesses using the default differential equation solver 
-%  (a Runge-Kutta 45 solver with adaptive step length adjustment).
 
 % Set the absolute and relative error tolerances to small values (1e-6 and 1e-5, respectively).
 
@@ -122,13 +118,14 @@ disp(parameterValuesDefault)
 
 %% Estimate the value of parameters
 
-model.Algorithm.MaxIter = 25;
+if fit == true
+    model.Algorithm.MaxIter = 25;
 
-model = pem(ts_data, model, 'Display', 'Full');
+    model = pem(ts_data, model, 'Display', 'Full');
 
-disp('Fitted parameter values:')
-v = getParameterVector(model)
-
+    disp('Fitted parameter values:')
+    v = getParameterVector(model)
+end
 %% Simulate the model with the experimental data (replace simData with your experimental data object)
 
 sim_output = sim(model,ts_data);     % only simulates the system given the experimental inputs
@@ -137,7 +134,11 @@ try
     compare(ts_data, sim_output); % compares the experimental data with the model given the default parameter values
 catch err
     for i=1:Ne
-        times = ts_data.SamplingInstants{i};
+        if Ne > 1
+            times = ts_data.SamplingInstants{i};
+        else
+            times = ts_data.SamplingInstants;
+        end
         Ts_mat(i) = mean(times(2:end) - times(1:end-1));
     end
     Ts = mean(Ts_mat);
