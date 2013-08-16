@@ -2,6 +2,8 @@
 % real data. Requires data in an iddata object
 
 fit = true;
+
+z_fixed = false;
 %% Load the data
 
 %load shemp_collection_2013_7_18.mat;     % replace this with the appropriate data file
@@ -32,26 +34,26 @@ end
 %% Construct model
 
 % free parameters to estimate: (inital guesses)
-m1          = 10; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
+m1          = 30; % 95.2176;     %20  % kg; comprises actual mass m and added mass m_i
 m3          = 15; %36.1737;      %4 % kg
 
 J           = 1.4;    %2.5  % kg*m^2
 
-eta3Up      = 0.2;  %0.0005 % efficiency (dimensionless)
-eta3Down    = 0.4; %0.0004
-eta1        = 0.5;    %0.2  % offset velocity (m/s)
-Kd3         = 59.8; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
+eta3Up      = 0.92;  %0.0005 % efficiency (dimensionless)
+eta3Down    = 0.94; %0.0004
+eta1        = 0.73;    %0.2  % offset velocity (m/s)
+Kd3         = 60; % 4.595*10^4;      %70 % quadratic drag coefficient (kg/m)
 
-Kt          = 0.2;   %1.03/6  % motor conversion (N/counts)
-KOmega      = 3.2;      %7  % drag-induced torque (kg*m^2/s)
-Kd1         = 50; % 285.0417;     %45  % axial drag coefficient (kg/s)
+Kt          = 0.17;   %1.03/6  % motor conversion (N/counts)
+KOmega      = 3.3;      %7  % drag-induced torque (kg*m^2/s)
+Kd1         = 66; % 285.0417;     %45  % axial drag coefficient (kg/s)
 
 % fixed parameters (assumed known)
 r           = 0.35;     % m; thruster moment arm
-Kg          = 0.8;      % tether weight/length (kg/s^2)
-zOffset     = 1.91;        % tether buoyancy offset (m)
+Kg          = 0.6;      % tether weight/length (kg/s^2)
+zOffset     = 1.5;        % tether buoyancy offset (m)
 
-Kdz         = 0.005;
+Kdz         = 0.004;
 
 % model data
 FileName        = 'vehicleModel';   % Name of .m model ODE file
@@ -59,7 +61,7 @@ Order           = [5 3 7];          % Model orders [ny nu nx]
 Parameters      = [m1; m3; J; eta3Up; eta3Down; eta1; Kd3; 
                    Kt; KOmega; Kd1;...         
                    r; Kg; zOffset; Kdz];    
-%Parameters = v;
+Parameters = v;
 %InitialStates   = zeros(Order(3),1);            % Initial initial state
 Ts              = 0;                            % continuous-time model
 
@@ -67,14 +69,15 @@ Ts              = 0;                            % continuous-time model
 model   = idnlgrey(FileName,Order,Parameters,InitialStates,Ts);
 
 % set which parameters are fixed (known)
-model.Parameters(2).Fixed = true;
+
 model.Parameters(11).Fixed = true;
 
-model.Parameters(8).Fixed = true;
-
-model.Parameters(7).Fixed = true;
-%model.Parameters(13).Fixed = true;
-
+% Z-direction parameters
+model.Parameters(2).Fixed = z_fixed;
+model.Parameters(7).Fixed = z_fixed;
+model.Parameters(12).Fixed = z_fixed;
+model.Parameters(13).Fixed = z_fixed;
+model.Parameters(14).Fixed = z_fixed;
 
 % set parameter names, units, etc
 set(model, 'InputName', {'u_t','u_{\phi}','u_z'}, 'InputUnit', {'counts','radians','counts'});
@@ -119,7 +122,7 @@ disp(parameterValuesDefault)
 %% Estimate the value of parameters
 
 if fit == true
-    model.Algorithm.MaxIter = 25;
+    model.Algorithm.MaxIter = 50;
 
     model = pem(ts_data, model, 'Display', 'Full');
 
