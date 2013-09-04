@@ -20,7 +20,7 @@ thetaDot = X(7);
 
 % Extract control inputs
 ut   = U(1);    % horizontal thruster input
-uphi = U(2);    % horizontal thruster servo input (radians)
+uphi = U(2) * pi/180.0;    % horizontal thruster servo input (radians)
 uz   = U(3);    % vertical thruster input
 
 % Kinematics
