@@ -60,23 +60,49 @@ classdef record_beluga < handle
             
             pause(0.1)
             
-            if (abs(obj.input_time_history(1) - obj.output_time_history(1)) > 0.01)
-                obj.output_time_history = obj.output_time_history(2:end);
-                obj.output_history = obj.output_history(2:end, :);
+            threshold = 0.008;
+            
+            % Make both input and output histories start at the same ROS
+            % time mark
+            if obj.input_time_history(1) < obj.output_time_history(1)
+                while true
+                    if abs(obj.input_time_history(1) - obj.output_time_history(1)) < threshold
+                        break
+                    else
+                        obj.input_time_history = obj.input_time_history(2:end);
+                        obj.input_history = obj.input_history(2:end,:);
+                    end
+                end
+            else
+                while true
+                    if abs(obj.output_time_history(1) - obj.input_time_history(1)) < threshold
+                        break
+                    else
+                        obj.output_time_history = obj.output_time_history(2:end);
+                        obj.output_history = obj.output_history(2:end, :);
+                    end
+                end
+            end
+            % Make sure both histories are the same number of time steps.
+            if size(obj.input_time_history, 2) < size(obj.output_time_history,2)
+                obj.output_time_history = obj.output_time_history(1:size(obj.input_time_history,2));
+                obj.output_history = obj.output_history(1:size(obj.input_time_history,2),:);
+            elseif size(obj.output_time_history,2) < size(obj.input_time_history,2)
+                obj.input_time_history = obj.input_time_history(1:size(obj.output_time_history,2));
+                obj.input_history = obj.input_history(1:size(obj.output_time_history,2),:);
             end
             
+            % Create iddata object
             ts_data = iddata(obj.output_history, obj.input_history, [], 'SamplingInstants', obj.output_time_history,...
                 'OutputName', {'x-position', 'y-position', 'z-position', 'sin(\theta)', 'cos(\theta)'},...
                 'OutputUnit', {'m', 'm', 'm', 'units', 'units'},...
                 'InputName', {'u_t', 'u_{\phi}', 'u_z'},...
                 'InputUnit', {'counts', 'radians', 'counts'});
             
-            c = obj.c;
-            
+            % Create time stamped file name and save iddata object to file
+            c = obj.c;            
             fname = strcat('data/', obj.robot, num2str(c(1)), '_', num2str(c(2)), '_', num2str(c(3)), '_', num2str(c(4)), '_', num2str(c(5)), '_', num2str(round(c(6))), '.mat');
-            
             save(fname, 'ts_data')
-            
             
         end
         
